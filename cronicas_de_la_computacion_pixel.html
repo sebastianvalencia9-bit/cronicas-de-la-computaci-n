@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Crónicas de la Computación</title>
+<style>
+html,body{margin:0;width:100%;height:100%;background:#111;overflow:hidden}
+body{display:flex;align-items:center;justify-content:center;font-family:"Courier New",monospace}
+#game{width:min(1200px,100vw);height:auto;aspect-ratio:16/9;border:4px solid #d7bd86;box-sizing:border-box;image-rendering:pixelated;background:#181b1c}
+#help{position:fixed;bottom:5px;left:50%;transform:translateX(-50%);color:#ddcfaa;font-size:13px;background:#16191bcc;border:1px solid #806d4c;padding:4px 8px}
+</style>
+</head>
+<body>
+<canvas id="game" width="1200" height="675"></canvas>
+<div id="help">Flechas / WASD: mover · E / ESPACIO: hablar · ENTER: continuar · 1/2/3: responder</div>
+<script>
+"use strict";
+
+const canvas=document.getElementById("game");
+const ctx=canvas.getContext("2d");
+ctx.imageSmoothingEnabled=false;
+
+const W=1200,H=675;
+const MAP={x:10,y:10,w:665,h:510};
+const DATA=[
+ {year:"1930–1940",title:"Computación mecánica",teacher:"PROF. HERMANN",short:"Engranajes y máquinas programables",reward:"ENGRANAJE",
+  pages:[
+   ["1930–1935","En esta etapa, los cálculos se apoyaban en máquinas mecánicas, tabuladoras y calculadoras. La gran idea era automatizar tareas que antes dependían del trabajo manual."],
+   ["1936","Alan Turing describió una máquina universal: un modelo teórico que podía seguir instrucciones y resolver distintos problemas. Fue una idea fundamental para pensar en la computación programable."],
+   ["1938–1939","Konrad Zuse construyó la Z1, una máquina programable experimental basada en componentes mecánicos. Poco después, la Z3 utilizó relés electromecánicos."],
+   ["IDEA CLAVE","La pregunta de esta etapa es: ¿puede una máquina recibir instrucciones, manipular datos y realizar una tarea automáticamente? La respuesta abriría el camino hacia la informática moderna."]
+  ],
+  question:"¿Qué caracteriza mejor a la etapa 1930–1940?",
+  options:["Máquinas mecánicas, relés y automatización del cálculo","Internet y microprocesadores","Pantallas táctiles y teléfonos inteligentes"],answer:0},
+ {year:"1940–1945",title:"Criptografía y guerra",teacher:"PROF. TURING",short:"Códigos, mensajes y cálculo electrónico",reward:"CÓDIGO",
+  pages:[
+   ["1940","La Segunda Guerra Mundial aumentó la necesidad de procesar información. Descifrar mensajes, calcular trayectorias y organizar datos exigía métodos más rápidos que el cálculo manual."],
+   ["1941","La Z3 de Zuse demostró que una máquina con relés podía seguir una secuencia de operaciones programadas. Era una muestra del potencial del cálculo automático."],
+   ["1943","Colossus comenzó a utilizarse en Gran Bretaña para ayudar a analizar comunicaciones cifradas alemanas. Fue una máquina electrónica especializada y un hito del procesamiento automático."],
+   ["1944–1945","Harvard Mark I mostró el poder de una gran máquina electromecánica, mientras que otros proyectos aceleraron la transición hacia máquinas electrónicas con válvulas de vacío."],
+   ["IDEA CLAVE","La guerra no creó por sí sola la informática, pero aceleró investigaciones en cálculo y criptografía y ayudó a llevar las máquinas automáticas hacia la electrónica."]
+  ],
+  question:"¿Por qué la criptografía impulsó el desarrollo de máquinas de cálculo?",
+  options:["Porque había que procesar y analizar muchos mensajes","Porque permitía crear videojuegos","Porque eliminaba la necesidad de programas"],answer:0},
+ {year:"1945–1950",title:"Primeros computadores",teacher:"PROF. ECKERT",short:"ENIAC, memoria y programas almacenados",reward:"VÁLVULA",
+  pages:[
+   ["1945","La idea del programa almacenado comenzó a tomar forma: instrucciones y datos podían mantenerse en memoria. Esto permitía reutilizar una máquina para problemas diferentes."],
+   ["1946","ENIAC fue presentada públicamente. Usaba miles de válvulas de vacío y ocupaba una enorme sala, pero podía realizar cálculos electrónicos a gran velocidad para su época."],
+   ["1947–1948","La investigación se centró en memoria, entrada y salida y métodos de programación. La computadora se convirtió en un sistema completo, no solo en una máquina de cálculo."],
+   ["1949","EDVAC ayudó a llevar a la práctica la idea de programa almacenado: el contenido de la memoria podía contener instrucciones además de datos."],
+   ["IDEA CLAVE","Las válvulas de vacío hicieron posible una nueva generación de máquinas electrónicas. El reto siguiente sería reducir tamaño, consumo y costo."]
+  ],
+  question:"¿Qué tecnología utilizaba ENIAC?",
+  options:["Válvulas de vacío","Transistores MOSFET","Microprocesadores"],answer:0},
+ {year:"1950–1955",title:"Programación y almacenamiento",teacher:"PROF. GRACE",short:"UNIVAC, memoria y software",reward:"MEMORIA",
+  pages:[
+   ["1950","Programar un computador era todavía difícil. Se desarrollaron métodos y herramientas para expresar algoritmos de manera más organizada y reutilizable."],
+   ["1951","UNIVAC I empezó a mostrar que los computadores podían utilizarse también para procesamiento de datos en organizaciones y empresas, además de laboratorios militares."],
+   ["1952","Las cintas magnéticas y otros sistemas de almacenamiento ayudaron a guardar datos y programas. La memoria y la entrada/salida se volvieron partes esenciales de la arquitectura."],
+   ["1953–1954","IBM amplió el uso de máquinas de procesamiento de datos. Las tarjetas perforadas siguieron siendo importantes para introducir información y programas."],
+   ["IDEA CLAVE","La informática pasó a ser tanto una disciplina de máquinas como de software: algoritmos, lenguajes, memoria y almacenamiento."]
+  ],
+  question:"¿Qué se convirtió en una parte central de la informática durante los años 50?",
+  options:["La programación y el almacenamiento de datos","La realidad virtual","Los teléfonos móviles"],answer:0},
+ {year:"1955–1960",title:"Transistores y lenguajes",teacher:"PROF. JOHN",short:"Segunda generación y alto nivel",reward:"TRANSISTOR",
+  pages:[
+   ["1955","Los transistores comenzaron a sustituir a las válvulas en muchos diseños. Eran más pequeños y consumían menos energía, lo que facilitó construir máquinas más eficientes."],
+   ["1956","Los computadores de segunda generación empezaron a definirse por el uso de transistores. La informática también buscó formas de programar con mayor facilidad."],
+   ["1957","FORTRAN apareció como uno de los primeros lenguajes de alto nivel de gran éxito. Permitió expresar cálculos de una forma mucho más cercana a las matemáticas."],
+   ["1958","Los trabajos de Jack Kilby y Robert Noyce contribuyeron al desarrollo del circuito integrado, abriendo el camino a una miniaturización todavía mayor."],
+   ["1959–1960","COBOL se desarrolló para facilitar el procesamiento de datos empresariales. Para 1960 ya existían transistores, lenguajes de alto nivel y una industria informática en expansión."]
+  ],
+  question:"¿Cuál fue una consecuencia importante del transistor?",
+  options:["Computadores más pequeños, eficientes y fiables","Computadores que ya no necesitaban programas","La desaparición de toda memoria"],answer:0}
+];
+
+let state="title";
+let activeEra=0;
+let page=0;
+let completed=0;
+let toast="";
+let toastTime=0;
+let quizChoice=-1;
+
+const player={x:343,y:250,w:16,h:22,speed:2.5,dir:"down"};
+const keys=new Set();
+let lastTalk=false;
+
+const teachers=[
+ {x:180,y:145},{x:515,y:145},{x:180,y:355},{x:515,y:355},{x:180,y:470}
+];
+
+window.addEventListener("keydown",e=>{
+ const k=e.key.toLowerCase();
+ keys.add(k);
+ if(["arrowup","arrowdown","arrowleft","arrowright"," ","enter"].includes(k))e.preventDefault();
+});
+window.addEventListener("keyup",e=>keys.delete(e.key.toLowerCase()));
+
+function fill(x,y,w,h,c){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
+function stroke(x,y,w,h,c="#9c845a"){ctx.strokeStyle=c;ctx.lineWidth=2;ctx.strokeRect(x,y,w,h)}
+function box(x,y,w,h,c="#171a1d",border="#9c845a"){fill(x,y,w,h,c);stroke(x,y,w,h,border)}
+function txt(s,x,y,size=14,c="#eee",align="left"){ctx.font=`bold ${size}px monospace`;ctx.fillStyle=c;ctx.textAlign=align;ctx.fillText(s,x,y)}
+function wrap(s,x,y,max,lh,size=12,c="#eee"){
+ ctx.font=`${size}px monospace`;ctx.fillStyle=c;ctx.textAlign="left";
+ for(const p of String(s).split("\n")){
+  let line="";
+  for(const word of p.split(" ")){
+   const test=line?line+" "+word:word;
+   if(ctx.measureText(test).width>max && line){ctx.fillText(line,x,y);y+=lh;line=word}else line=test;
+  }
+  if(line){ctx.fillText(line,x,y);y+=lh}
+ }
+ return y;
+}
+function drawTeacher(x,y,i){
+ const col=["#b28d65","#66839a","#966e6e","#6d8c70","#796b99"][i];
+ fill(x-10,y+17,20,5,"#202124"); fill(x-8,y-3,16,21,col); fill(x-7,y-16,14,13,"#d6a275");
+ fill(x-8,y-17,16,5,"#3e2b24"); fill(x-5,y-8,3,2,"#222");fill(x+2,y-8,3,2,"#222");
+}
+function drawPlayer(){
+ const x=Math.round(player.x),y=Math.round(player.y);
+ fill(x-9,y+12,18,5,"#1d1e20");fill(x-7,y-2,14,17,"#dce2e3");
+ fill(x-6,y-15,12,13,"#d7a175");fill(x-7,y-16,14,5,"#5b3528");
+ fill(x-8,y-10,3,7,"#5b3528");fill(x+5,y-10,3,7,"#5b3528");
+ fill(x-6,y+2,4,10,"#3d567d");fill(x+2,y+2,4,10,"#3d567d");
+ fill(x-7,y+14,5,4,"#292a2e");fill(x+2,y+14,5,4,"#292a2e");
+ fill(x-4,y-7,2,2,"#222");fill(x+2,y-7,2,2,"#222");
+}
+function room(x,y,w,h,i){
+ fill(x,y,w,h,"#ab8667");stroke(x,y,w,h,"#49352c");
+ fill(x+8,y+8,w-16,24,"#384742");stroke(x+8,y+8,w-16,24,"#c1a06a");
+ txt(`AULA ${i+1}`,x+w/2,y+20,11,"#f1d9a4","center");
+ txt(DATA[i].year,x+w/2,y+43,10,"#eee","center");
+ txt(DATA[i].title.toUpperCase(),x+w/2,y+55,7,"#e8e0ce","center");
+ fill(x+w-28,y+60,16,24,"#65442f");fill(x+w-24,y+64,8,18,"#29323a");
+ fill(x+15,y+h-48,65,34,"#3e4749");stroke(x+15,y+h-48,65,34,"#242728");
+ if(i===0){for(let k=0;k<4;k++)fill(x+24+k*13,y+h-38,8,8,"#b6a174")}
+ if(i===1){fill(x+25,y+h-37,46,8,"#202327");for(let k=0;k<6;k++)fill(x+28+k*7,y+h-25,4,8,"#aa8a5a")}
+ if(i===2){for(let k=0;k<5;k++)fill(x+24+k*9,y+h-39,5,24,"#a8adae")}
+ if(i===3){fill(x+23,y+h-38,24,18,"#202426");fill(x+55,y+h-35,18,15,"#262b2d")}
+ if(i===4){fill(x+24,y+h-38,24,18,"#323039");fill(x+57,y+h-40,15,21,"#c7b98c")}
+ drawTeacher(x+w/2,y+h-23,i);
+}
+function drawMap(){
+ box(MAP.x,MAP.y,MAP.w,MAP.h,"#23282a","#d4b57b");
+ txt("ESCUELA DE INFORMÁTICA",MAP.x+18,MAP.y+29,23,"#f1d49a");
+ txt("1930 — 1960",MAP.x+18,MAP.y+49,11,"#d7cfba");
+
+ fill(MAP.x+14,MAP.y+62,MAP.w-28,MAP.h-77,"#8f7058");stroke(MAP.x+14,MAP.y+62,MAP.w-28,MAP.h-77,"#47352d");
+ fill(MAP.x+284,MAP.y+75,100,350,"#c7aa83");stroke(MAP.x+284,MAP.y+75,100,350,"#5b4637");
+ fill(MAP.x+305,MAP.y+112,58,65,"#617653");stroke(MAP.x+305,MAP.y+112,58,65,"#425036");
+ fill(MAP.x+323,MAP.y+128,22,28,"#42613e");
+ fill(MAP.x+110,MAP.y+440,445,18,"#c6a781");
+ fill(MAP.x+275,MAP.y+75,118,22,"#c6a781");
+ room(MAP.x+28,MAP.y+82,235,135,0);
+ room(MAP.x+402,MAP.y+82,235,135,1);
+ room(MAP.x+28,MAP.y+233,235,135,2);
+ room(MAP.x+402,MAP.y+233,235,135,3);
+
+ fill(MAP.x+28,MAP.y+388,235,82,"#aa8263");stroke(MAP.x+28,MAP.y+388,235,82,"#49352c");
+ txt("AULA 5",MAP.x+145,MAP.y+408,10,"#f1d9a4","center");
+ txt("1955–1960",MAP.x+145,MAP.y+427,9,"#eee","center");
+ txt("TRANSISTORES Y LENGUAJES",MAP.x+145,MAP.y+443,8,"#e8e0ce","center");
+ drawTeacher(MAP.x+145,MAP.y+452,4);
+
+ fill(MAP.x+402,MAP.y+388,235,82,"#8d6b57");stroke(MAP.x+402,MAP.y+388,235,82,"#49352c");
+ txt("LABORATORIO",MAP.x+519,MAP.y+413,11,"#f1d9a4","center");
+ txt("EXPERIMENTA Y DESCUBRE",MAP.x+519,MAP.y+432,8,"#e8e0ce","center");
+ fill(MAP.x+428,MAP.y+442,60,20,"#333a3d");fill(MAP.x+496,MAP.y+442,40,20,"#495055");
+
+ // Banco decorativo, sin cubrir a ningún profesor
+ fill(MAP.x+420,MAP.y+287,70,8,"#6f4b34");
+ fill(MAP.x+430,MAP.y+295,8,16,"#5a3d2c");
+ fill(MAP.x+477,MAP.y+295,8,16,"#5a3d2c");
+ drawPlayer();
+ const nt=nearbyTeacher();
+ if(nt>=0){box(MAP.x+18,MAP.y+478,300,26,"#111518e8","#b99b63");txt(`E: HABLAR CON ${DATA[nt].teacher}`,MAP.x+30,MAP.y+496,9,"#f1d9a4")}
+}
+function drawCharacterPanel(){
+ box(690,10,500,150);
+ txt("PERSONAJE PRINCIPAL",940,34,20,"#f1d49a","center");
+ box(705,47,145,98,"#202527","#806d4f");
+ // portrait
+ fill(774,125,28,5,"#1b1c1e");fill(764,78,48,42,"#dfe4e4");fill(772,58,32,25,"#d7a075");
+ fill(769,57,38,6,"#5a3528");fill(759,70,8,18,"#5a3528");fill(801,70,8,18,"#5a3528");
+ fill(770,90,13,25,"#3e567d");fill(793,90,13,25,"#3e567d");
+ txt("ESTUDIANTE",867,67,13,"#f0d39a");
+ txt("Nivel 1",867,91,11);txt(`Conocimiento: ${completed}/5`,867,111,11);txt(`Aulas completadas: ${completed}/5`,867,131,10);
+ box(866,47,306,90,"#171b1d","#806d4f");
+ txt("DESCRIPCIÓN",883,69,10,"#f0d39a");
+ wrap("Un estudiante curioso que quiere descubrir cómo comenzó la era de la informática.",883,91,265,15,9,"#ddd");
+}
+function drawProfessors(){
+ box(690,170,500,185);
+ txt("PROFESORES · ETAPAS HISTÓRICAS",940,193,17,"#f1d49a","center");
+ for(let i=0;i<5;i++){
+   const x=700+i*96;
+   box(x,205,88,125,"#202426","#806d4f");
+   drawTeacher(x+44,235,i);
+   txt(DATA[i].year,x+44,278,8,"#f0d39a","center");
+   txt((i+1)+"/5",x+44,292,8,i<completed?"#b6cb8e":"#8d8d88","center");
+   wrap(DATA[i].title,x+8,307,72,10,7,"#ddd");
+ }
+}
+function drawBottom(){
+ box(10,530,420,135,"#171b1d","#d0b57d");
+ txt("PIEZAS HISTÓRICAS",30,554,17,"#f1d49a");
+ const labs=["ENGRANAJE","CÓDIGO","VÁLVULA","MEMORIA","TRANSISTOR"];
+ for(let i=0;i<5;i++){
+   const x=25+i*77;
+   box(x,568,65,72,i<completed?"#4a402f":"#252a2d","#806d4f");
+   if(i<completed){fill(x+24,584,18,18,["#b7ab8d","#8e7148","#afb3ad","#aa9165","#8d79a5"][i]);txt("✓",x+32,599,13,"#24241e","center")}
+   else txt("?",x+32,601,18,"#777","center");
+   txt(labs[i],x+32,620,6,i<completed?"#e4cf98":"#777","center");
+ }
+ box(440,530,750,135,"#171b1d","#d0b57d");
+ drawBottomContent();
+}
+function drawBottomContent(){
+ if(state==="title"){
+  txt("INTERFAZ DE DIÁLOGO",460,554,17,"#f1d49a");
+  wrap("Bienvenido a la escuela. Explora el mapa y habla con cada profesor para avanzar por la historia de la informática.",460,580,700,18,10);
+ } else if(state==="dialog"){
+  const e=DATA[activeEra],pg=e.pages[page];
+  txt(`${e.teacher} · ${e.year}`,460,554,13,"#f1d49a");
+  wrap(pg[1],460,579,700,18,10);
+  txt(`${pg[0]} · PÁGINA ${page+1}/${e.pages.length}`,1170,649,8,"#cfc4a8","right");
+ } else if(state==="quiz"){
+  const e=DATA[activeEra];
+  txt("PREGUNTA · "+e.year,460,554,13,"#f1d49a");
+  wrap(e.question,460,579,700,17,9);
+  for(let i=0;i<3;i++)txt(`${i+1}. ${e.options[i]}`,475,608+i*13,8,i===quizChoice?"#f0d39a":"#ddd");
+ } else if(state==="fact"){
+  const e=DATA[activeEra];
+  txt("¡ETAPA SUPERADA!",460,554,13,"#efd28e");
+  wrap(`Has obtenido: ${e.reward}. ${e.pages[e.pages.length-1][1]}`,460,579,700,17,9);
+  txt("ENTER / ESPACIO: VOLVER AL MAPA",1170,649,8,"#cfc4a8","right");
+ } else if(state==="done"){
+  txt("LABORATORIO FINAL DESBLOQUEADO",460,554,13,"#efd28e");
+  wrap("Has reunido las cinco piezas históricas. El viaje por 1930–1960 está completo.",460,579,700,17,9);
+ } else {
+  txt("MISIÓN",460,554,13,"#f1d49a");
+  wrap(`Completa las cinco aulas. Progreso: ${completed}/5.`,460,579,700,17,10);
+ }
+}
+function nearbyTeacher(){
+ let idx=-1,dist=1e9;
+ for(let i=0;i<teachers.length;i++){
+   const t=teachers[i],d=Math.hypot(player.x-(MAP.x+t.x),player.y-(MAP.y+t.y));
+   if(d<dist&&d<65){idx=i;dist=d}
+ }
+ return idx;
+}
+function blocked(x,y){
+ // keep player inside map walking area; simple boundary and avoid center garden
+ if(x<MAP.x+80||x>MAP.x+MAP.w-70||y<MAP.y+78||y>MAP.y+MAP.h-45)return true;
+ if(x>MAP.x+298&&x<MAP.x+370&&y>MAP.y+108&&y<MAP.y+183)return true;
+ return false;
+}
+function move(){
+ if(state!=="play")return;
+ let dx=(keys.has("arrowright")||keys.has("d")?1:0)-(keys.has("arrowleft")||keys.has("a")?1:0);
+ let dy=(keys.has("arrowdown")||keys.has("s")?1:0)-(keys.has("arrowup")||keys.has("w")?1:0);
+ if(dx||dy){
+  if(Math.abs(dx)+Math.abs(dy)>1){dx*=0.707;dy*=0.707}
+  const nx=player.x+dx*player.speed,ny=player.y+dy*player.speed;
+  if(!blocked(nx,player.y))player.x=nx;
+  if(!blocked(player.x,ny))player.y=ny;
+ }
+}
+function actionPressed(){
+ const p=keys.has("e")||keys.has(" ")||keys.has("enter");
+ const fresh=p&&!lastTalk; lastTalk=p; return fresh;
+}
+function handle(){
+ if(state==="title"&&actionPressed()){state="play";return}
+ if(state==="play"&&actionPressed()){
+   const i=nearbyTeacher();
+   if(i<0)return;
+   if(i>completed){toast="Completa las aulas anteriores primero.";toastTime=120;return}
+   activeEra=i;page=0;state="dialog";return;
+ }
+ if(state==="dialog"&&actionPressed()){
+   if(page<DATA[activeEra].pages.length-1)page++;
+   else{quizChoice=-1;state="quiz"}
+   return;
+ }
+ if(state==="fact"&&actionPressed()){
+   state=completed===DATA.length?"done":"play";return;
+ }
+ if(state==="done"&&actionPressed()){state="play";return}
+}
+window.addEventListener("keydown",e=>{
+ const n=parseInt(e.key,10);
+ if(state==="quiz"&&n>=1&&n<=3){
+   quizChoice=n-1;
+   const eData=DATA[activeEra];
+   if(quizChoice===eData.answer){
+     completed=Math.max(completed,activeEra+1);
+     state="fact";
+     toast="¡Correcto! Pieza obtenida: "+eData.reward;
+     toastTime=160;
+   }else{
+     toast="Respuesta incorrecta. Lee la explicación y prueba de nuevo.";
+     toastTime=130;
+   }
+ }
+});
+
+function drawTitle(){
+ fill(0,0,W,H,"#101315");
+ box(145,90,910,470,"#171a1d","#d2b67c");
+ txt("CRÓNICAS DE LA COMPUTACIÓN",600,165,35,"#efd49a","center");
+ txt("1930 — 1960",600,198,18,"#eee","center");
+ wrap("Eres un estudiante en una escuela donde cada salón guarda una etapa de la historia de la informática.",300,260,600,24,15);
+ wrap("Habla con los profesores, lee las explicaciones, supera los retos y reúne las cinco piezas históricas.",300,330,600,24,15);
+ txt("ENTER / ESPACIO · COMENZAR",600,420,15,"#efd49a","center");
+ txt("Inspirado en la presentación visual de un RPG educativo retro.",600,455,9,"#aaa","center");
+}
+function draw(){
+ fill(0,0,W,H,"#101214");
+ drawMap();drawCharacterPanel();drawProfessors();drawBottom();
+ if(state==="title")drawTitle();
+ if(toastTime>0){box(350,478,500,34,"#15191beF","#967b53");txt(toast,600,500,9,"#f0d39a","center");toastTime--}
+}
+function loop(){move();handle();draw();requestAnimationFrame(loop)}
+loop();
+</script>
+</body>
+</html>
